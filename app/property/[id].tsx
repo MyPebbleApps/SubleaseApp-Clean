@@ -11,10 +11,12 @@ import {
   Modal,
   Animated,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import type { Property } from '../../types/Property';
+import { createNewChat, createInitialInquiryMessage, findExistingChat } from '../../utils/chatService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -232,9 +234,36 @@ export default function PropertyDetailScreen() {
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
-  const handleContactPress = () => {
-    // TODO: Implement contact functionality
-    console.log('Contact pressed for property:', property.id);
+  const handleInquirePress = () => {
+    // Check if chat already exists for this property
+    const existingChat = findExistingChat(property.id);
+
+    if (existingChat) {
+      // Navigate to existing chat
+      router.push(`/chat/${existingChat.id}`);
+    } else {
+      // Create new chat and initial inquiry message
+      Alert.alert(
+        'Send Inquiry',
+        `Would you like to inquire about "${property.title}"?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          },
+          {
+            text: 'Send Inquiry',
+            onPress: () => {
+              const newChat = createNewChat(property);
+              const initialMessage = createInitialInquiryMessage(newChat.id, property);
+
+              // Navigate to the new chat
+              router.push(`/chat/${newChat.id}?initialMessage=true`);
+            }
+          }
+        ]
+      );
+    }
   };
 
   return (
@@ -331,8 +360,8 @@ export default function PropertyDetailScreen() {
           <Text style={styles.price}>${property.pricing.amount}</Text>
           <Text style={styles.priceUnit}>/{property.pricing.period}</Text>
         </View>
-        <TouchableOpacity style={styles.contactButton} onPress={handleContactPress}>
-          <Text style={styles.contactButtonText}>Contact Host</Text>
+        <TouchableOpacity style={styles.contactButton} onPress={handleInquirePress}>
+          <Text style={styles.contactButtonText}>Inquire</Text>
         </TouchableOpacity>
       </View>
 
